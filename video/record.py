@@ -26,7 +26,15 @@ def duration(path):
 def tts(i, text):
     mp3 = WORK / f'vo{i:02d}.mp3'
     if not mp3.exists() or (WORK / f'vo{i:02d}.txt').read_text(encoding='utf8') != text if (WORK / f'vo{i:02d}.txt').exists() else True:
-        subprocess.run(['edge-tts', '--voice', VOICE, '--rate=+6%', '--text', text, '--write-media', str(mp3)], check=True)
+        for attempt in range(4):
+            try:
+                subprocess.run(['edge-tts', '--voice', VOICE, '--rate=+6%', '--text', text, '--write-media', str(mp3)], check=True, timeout=60)
+                if mp3.stat().st_size > 5000:
+                    break
+            except Exception as e:
+                print('tts retry', i, attempt, e)
+        else:
+            raise RuntimeError(f'edge-tts failed for scene {i}')
         (WORK / f'vo{i:02d}.txt').write_text(text, encoding='utf8')
     return mp3, duration(mp3)
 
@@ -53,9 +61,12 @@ async def run_scene(browser, i, sc, dur):
     if sc.get('label'):
         await page.evaluate(LABEL_JS, sc['label'])
     t_start = time.time()
+    mark = None
     for step in sc.get('steps', []):
         kind = step[0]
-        if kind == 'wait':
+        if kind == 'mark':  # everything after this plays at 1x
+            mark = time.time() - t_ctx
+        elif kind == 'wait':
             await page.wait_for_timeout(int(step[1] * 1000))
         elif kind == 'scroll':  # ('scroll', selector_or_px, seconds)
             target = step[1] if isinstance(step[1], (int, float)) else await y_of(page, step[1])
@@ -78,7 +89,7 @@ async def run_scene(browser, i, sc, dur):
     await page.wait_for_timeout(300)
     await ctx.close()
     webm = next((WORK / f'raw{i:02d}').glob('*.webm'))
-    return webm, t_start - t_ctx, t_end - t_ctx
+    return webm, t_start - t_ctx, t_end - t_ctx, mark
 
 
 async def main():
@@ -89,17 +100,23 @@ async def main():
         for i, sc in enumerate(script):
             mp3, d = tts(i, sc['vo'])
             seg = WORK / f'seg{i:02d}.mp4'
-            if not only or i in only or not seg.exists():
+            if (only and i in only) or not seg.exists():
                 for old in (WORK / f'raw{i:02d}').glob('*.webm') if (WORK / f'raw{i:02d}').exists() else []:
                     old.unlink()
-                webm, a, b = await run_scene(browser, i, sc, d)
-                span = max(0.5, b - a)
+                webm, a, b, mark = await run_scene(browser, i, sc, d)
                 target = d + 0.6
-                speed = span / target  # >1 = speed up
-                print(f'scene {i}: recorded {span:.1f}s → {target:.1f}s (x{speed:.2f})')
-                vf = f"trim=start={a:.2f}:end={b:.2f},setpts=(PTS-STARTPTS)/{speed:.4f},fps=30,scale=1920:1080:flags=lanczos,tpad=stop_mode=clone:stop_duration=2,trim=duration={target:.2f}"
+                post = f"fps=30,scale=1920:1080:flags=lanczos,tpad=stop_mode=clone:stop_duration=2,trim=duration={target:.2f}"
+                if mark:
+                    hold = b - mark
+                    speed = (mark - a) / max(1, target - hold)
+                    vchain = (f"[0:v]split[s1][s2];[s1]trim=start={a:.2f}:end={mark:.2f},setpts=(PTS-STARTPTS)/{speed:.4f}[p1];"
+                              f"[s2]trim=start={mark:.2f}:end={b:.2f},setpts=PTS-STARTPTS[p2];[p1][p2]concat=n=2:v=1:a=0,{post}[v]")
+                else:
+                    speed = max(0.5, b - a) / target
+                    vchain = f"[0:v]trim=start={a:.2f}:end={b:.2f},setpts=(PTS-STARTPTS)/{speed:.4f},{post}[v]"
+                print(f'scene {i}: recorded {b - a:.1f}s -> {target:.1f}s (x{speed:.2f}{", hold %.1fs" % (b - mark) if mark else ""})')
                 subprocess.run([FF, '-y', '-loglevel', 'error', '-i', str(webm), '-i', str(mp3), '-filter_complex',
-                                f"[0:v]{vf}[v];[1:a]apad=whole_dur={target:.2f},aresample=48000[a]", '-map', '[v]', '-map', '[a]',
+                                f"{vchain};[1:a]apad=whole_dur={target:.2f},aresample=48000[a]", '-map', '[v]', '-map', '[a]',
                                 '-c:v', 'libx264', '-preset', 'medium', '-crf', '19', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', str(seg)], check=True)
             clips.append(seg)
         await browser.close()

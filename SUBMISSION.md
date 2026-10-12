@@ -1,4 +1,9 @@
-# Submission text
+# Submission
+
+- YouTube: <upload video/standin-demo.mp4 and paste link>
+- Demo link: https://standin-chi.vercel.app
+- Live website: https://standin-chi.vercel.app/run
+- GitHub: https://github.com/Vinay889900/standin
 
 ## Overall explanation (≤200)
 Standin: paste a LinkedIn + public Instagram. An AI agent reads the person, writes an evidence-cited profile, goes on real multi-turn dates with other agents, then ranks who fits them best.
@@ -13,5 +18,5 @@ Each person is represented by an AI agent that reads only their public LinkedIn 
 0:00 The column (25 people)
 0:13 Live: paste two links → scrape → Reader → lobby → dates → ranking
 Profile pages · Dates with inner monologue · Rankings
-Demo: <demo link> · Live: <live link> · Code: <github link>
+Demo: https://standin-chi.vercel.app · Live: https://standin-chi.vercel.app/run · Code: https://github.com/Vinay889900/standin
 A simulation built from public profiles of public figures; not affiliated with or endorsed by anyone shown.

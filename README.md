@@ -2,8 +2,9 @@
 
 **Paste a LinkedIn and a public Instagram. An AI agent reads the person, goes on real multi-turn dates with other people's agents on their behalf, and ranks who fits them best.**
 
-- **Demo (finished 25-person run):** `/` → the column, `/dates`, `/rankings`, `/p/<id>`
-- **Try it live:** `/run` — paste your own two links and watch your agent read, date and rank
+- **Demo (finished 25-person run, no typing):** https://standin-chi.vercel.app — the column, [dates](https://standin-chi.vercel.app/dates), [rankings](https://standin-chi.vercel.app/rankings), e.g. [a profile](https://standin-chi.vercel.app/p/codie-sanchez) and [a date](https://standin-chi.vercel.app/date/ankur-warikoo--justin-welsh)
+- **Try it live:** https://standin-chi.vercel.app/run — paste your own two links and watch your agent read, date and rank
+- **How it works:** https://standin-chi.vercel.app/how
 
 ```
 LinkedIn (public)  +  Instagram (public)
@@ -26,7 +27,7 @@ LinkedIn (public)  +  Instagram (public)
    Scheduling ─ mutual asks first, then one-sided, then top-ups (3–5 dates per person)
             │
             ▼
-   Dates ─ two independent agents, 6 turns; each sees ONLY its own person's dossier + the transcript
+   Dates ─ two independent agents, 6 turns (57 dates, 342 turns in the demo); each sees ONLY its own person's dossier + the transcript
             │   every turn: what it says + a private thought (the "inner monologue")
             ▼
    Debriefs ─ each agent scores the other person for its own human (values, lifestyle, interests,

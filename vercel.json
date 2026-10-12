@@ -1,11 +1,23 @@
 {
+  "framework": null,
+  "buildCommand": "",
+  "installCommand": "npm install",
   "outputDirectory": "public",
   "functions": {
-    "api/run.js": { "maxDuration": 300, "includeFiles": "public/data/demo.json" }
+    "api/run.js": {
+      "maxDuration": 300,
+      "includeFiles": "public/data/demo.json"
+    }
   },
   "rewrites": [
-    { "source": "/p/:id", "destination": "/person.html" },
-    { "source": "/date/:id", "destination": "/date.html" }
+    {
+      "source": "/p/:id",
+      "destination": "/person"
+    },
+    {
+      "source": "/date/:id",
+      "destination": "/date"
+    }
   ],
   "cleanUrls": true
 }

@@ -5,3 +5,6 @@ video/*.mp4
 video/work
 data/raw
 data/*.log
+
+.vercel
+.env*

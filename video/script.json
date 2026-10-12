@@ -1,0 +1,50 @@
+[
+  {
+    "url": "/",
+    "label": "Standin · agentic dating",
+    "vo": "This is Standin. Twenty-five real people: founders, authors, investors and creators. Each one is represented by their own AI agent, and every agent knows its person from exactly two sources: their LinkedIn and their public Instagram.",
+    "steps": [["wait", 2.5], ["scroll", "#people", 5], ["wait", 1], ["scroll", 2600, 5]]
+  },
+  {
+    "url": "/run",
+    "label": "1 · Paste two links",
+    "vo": "Here's the whole flow, live, with someone new: Richard Branson. I paste his LinkedIn and his Instagram. The scrapers pull his public profile and his latest posts. The Reader agent analyzes him, and every need, hobby and interest it writes is tied to a line it actually read. His agent walks into the lobby, scores all twenty-five people, and asks four of them out. Those dates run in parallel, and every line, and every private thought, streams in as it happens. Both agents debrief, and Richard gets his ranking.",
+    "steps": [["type", "#li", "https://www.linkedin.com/in/rbranson"], ["type", "#ig", "https://www.instagram.com/richardbranson/"], ["click", "#go"], ["label", "2 · Scrape → Read → Lobby → Dates → Rank"], ["until", "document.querySelector('#out .rank') !== null || document.querySelector('#out .err') !== null", 330, "#out .line, #out .hero, #out .trait"], ["wait", 1.2], ["scroll", 0, 0.1], ["scroll", "#out", 1.2], ["wait", 2.5]]
+  },
+  {
+    "url": "/p/codie-sanchez",
+    "label": "3 · The agent's analysis",
+    "vo": "Every person gets a profile page like this one: the agent's analysis of Codie Sanchez. A personals ad written by the agent. Then needs, hobbies, interests and values, each with the exact LinkedIn or Instagram line it came from, and a confidence. Lifestyle, what they look for, possible friction. And on the right, everything the agent read.",
+    "steps": [["wait", 3], ["scroll", ".ad-copy", 3], ["wait", 3], ["scroll", "section.cols:nth-of-type(3)", 4], ["wait", 6], ["scroll", ".reading", 4], ["wait", 2]]
+  },
+  {
+    "url": "/p/ankur-warikoo",
+    "label": "3 · The agent's analysis",
+    "vo": "The same depth for all twenty-five. Here's Ankur Warikoo.",
+    "steps": [["wait", 1.5], ["scroll", "section.cols:nth-of-type(3)", 3]]
+  },
+  {
+    "url": "/date/ankur-warikoo--justin-welsh?thoughts&replay&pace=2300",
+    "label": "4 · The agents date",
+    "vo": "Now the dates. Each agent knows only its own person and what's said at the table, so it has to ask, listen and probe. Here are Ankur's agent and Justin's agent, at a quiet rooftop tea tasting under the stars. The red lines are private thoughts the other agent never sees. After the date, each agent writes a candid debrief for its own person: scores for values, lifestyle and chemistry, and a yes or no to a second date.",
+    "steps": [["wait", 16], ["scroll", ".debriefs", 3], ["wait", 6]]
+  },
+  {
+    "url": "/dates",
+    "label": "4 · The agents date",
+    "vo": "Across the run: NDATES dates, sorted by how well both sides scored them.",
+    "steps": [["wait", 1], ["scroll", 1400, 4]]
+  },
+  {
+    "url": "/rankings",
+    "label": "5 · Rankings",
+    "vo": "Then the rankings. For every person, everyone else is ranked. People they dated are scored from both agents' debriefs, the rest from the lobby read. Here is each person's top three, and the full twenty-five by twenty-five grid of who fits whom. Outlined cells are pairs that actually went on a date.",
+    "steps": [["wait", 2], ["scroll", 900, 5], ["scroll", "#mx", 3], ["wait", 7]]
+  },
+  {
+    "url": "/how",
+    "label": "Standin",
+    "vo": "Two links in. A ranking out. The finished run, the live site and the code are linked below.",
+    "steps": [["wait", 1], ["scroll", 600, 3]]
+  }
+]

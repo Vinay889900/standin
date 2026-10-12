@@ -1,0 +1,8 @@
+.env
+.env.*
+!.env.example
+data/raw
+data/*.log
+video
+node_modules
+.git

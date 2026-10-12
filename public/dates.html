@@ -1,0 +1,15 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="/css/site.css"><script src="/js/app.js"></script><title>Dates — Standin</title></head><body>
+<div class="wrap"><section class="section"><div class="section-head"><h2>Every date</h2><span class="kicker" id="n"></span></div><div class="datelist" id="list"></div></section></div>
+<script>
+mount('/dates');
+db().then((d) => {
+  const ds = d.dates.slice().sort((a, b) => dateFit(b) - dateFit(a));
+  document.getElementById('n').textContent = `${ds.length} dates · sorted by mutual fit`;
+  document.getElementById('list').innerHTML = ds.map((x) => {
+    const A = d.byId[x.a], B = d.byId[x.b];
+    const ya = x.debriefs[x.a]?.second_date, yb = x.debriefs[x.b]?.second_date;
+    const tag = ya && yb ? '<span class="mono yes">BOTH WANT A SECOND DATE</span>' : ya || yb ? '<span class="mono muted">ONE-SIDED</span>' : '<span class="mono no">NO SPARK</span>';
+    return `<a class="row" href="/date/${encodeURIComponent(x.id)}"><span class="names">${esc(A?.name)} <span class="accent">&amp;</span> ${esc(B?.name)}</span><span class="venue">${esc(x.venue?.venue)}<br>${tag}</span><span class="fit">${dateFit(x)}</span></a>`;
+  }).join('');
+});
+</script></body></html>

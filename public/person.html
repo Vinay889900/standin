@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="/css/site.css"><script src="/js/app.js"></script><title>Profile — Standin</title></head><body>
+<div class="wrap" id="main"><p class="section">Loading…</p></div>
+<script>
+mount('');
+const id = decodeURIComponent(location.pathname.split('/p/')[1] || new URLSearchParams(location.search).get('id') || '');
+db().then((d) => {
+  const p = d.byId[id];
+  if (!p) { document.getElementById('main').innerHTML = '<p class="section err">No profile with id “' + esc(id) + '”. <a href="/">Back to the column</a></p>'; return; }
+  document.title = p.name + ' — Standin';
+  document.getElementById('main').innerHTML = profileHtml(p, d);
+});
+</script></body></html>

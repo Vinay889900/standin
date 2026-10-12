@@ -1,0 +1,25 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="/css/site.css"><script src="/js/app.js"></script><title>Rankings — Standin</title></head><body>
+<div class="wrap">
+<section class="section"><div class="section-head"><h2>Every person’s top three</h2><span class="kicker">click a name for the full ranking of everyone</span></div><div class="cols" id="tops"></div></section>
+<section class="section"><div class="section-head"><h2>Who fits whom</h2><span class="kicker">each row is one person’s ranking · darker = better fit · red outline = they dated</span></div>
+<div class="matrix-wrap"><table class="matrix" id="mx"></table></div></section>
+</div>
+<script>
+mount('/rankings');
+db().then((d) => {
+  const ps = d.people;
+  const fit = (p, q) => (d.rankings[p.id] || []).find((r) => r.id === q.id);
+  let h = '<tr><th></th>' + ps.map((q) => `<th class="col">${esc(q.name)}</th>`).join('') + '</tr>';
+  for (const p of ps) {
+    h += `<tr><th class="row"><a href="/p/${p.id}">${esc(p.name)}</a></th>` + ps.map((q) => {
+      if (p.id === q.id) return '<td class="self"></td>';
+      const r = fit(p, q); if (!r) return '<td></td>';
+      const a = Math.max(0.04, Math.min(1, (r.fit - 30) / 60));
+      const href = r.basis === 'date' ? `/date/${r.dateId}` : `/p/${p.id}`;
+      return `<td title="${esc(`${p.name} → ${q.name}: ${r.fit} (#${r.rank}, ${r.basis === 'date' ? 'dated' : 'lobby estimate'})`)}" class="${r.basis === 'date' ? 'dated' : ''}" style="background:rgba(27,25,22,${a.toFixed(2)})" onclick="location.href='${href}'">${r.fit}</td>`;
+    }).join('') + '</tr>';
+  }
+  document.getElementById('mx').innerHTML = h;
+  document.getElementById('tops').innerHTML = ps.map((p) => `<div class="c4" style="margin-bottom:26px"><a href="/p/${p.id}" style="text-decoration:none"><h3 style="font:400 30px/1 var(--display);margin-bottom:8px">${esc(p.name)}</h3></a>${rankRows(d.rankings[p.id] || [], d, 3)}</div>`).join('');
+});
+</script></body></html>

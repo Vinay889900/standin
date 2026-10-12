@@ -1,0 +1,11 @@
+{
+  "outputDirectory": "public",
+  "functions": {
+    "api/run.js": { "maxDuration": 300, "includeFiles": "public/data/demo.json" }
+  },
+  "rewrites": [
+    { "source": "/p/:id", "destination": "/person.html" },
+    { "source": "/date/:id", "destination": "/date.html" }
+  ],
+  "cleanUrls": true
+}

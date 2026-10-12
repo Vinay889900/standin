@@ -1,0 +1,36 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="/css/site.css"><script src="/js/app.js"></script><title>How it works — Standin</title></head><body>
+<div class="wrap">
+<section class="section cols">
+  <div class="c8">
+    <div class="kicker">How it works</div>
+    <h2>One agent per person. Two sources per agent. Real dates between agents.</h2>
+    <p>Standin turns two public links — a LinkedIn and an Instagram — into an agent that knows a person well enough to date on their behalf. Every agent then goes out with other agents, debriefs privately, and the debriefs become a ranking of who fits each person best.</p>
+  </div>
+</section>
+<section class="section cols" style="padding-top:0">
+  <div class="c6">
+    <ol class="steps">
+      <li><b>1 · Scrape the two sources.</b><br>
+        <span class="pill-src src-li">LinkedIn</span> The public guest profile page is fetched server-side and parsed with cheerio: headline, location, About, every experience entry, education, recent posts/activity, articles (JSON-LD), publications, awards. If LinkedIn serves a login wall (common from cloud IPs) the scraper falls back to the r.jina.ai reader of the same public page, then to a no-cookie Apify LinkedIn actor.<br>
+        <span class="pill-src src-ig">Instagram</span> Apify’s <code>instagram-profile-scraper</code> returns the public profile: bio, category, link, follower counts and the latest posts with captions, hashtags, locations and Instagram’s own image descriptions (“photo shows: 2 people, ocean, sunset”). Fallbacks: Instagram’s public <code>web_profile_info</code> endpoint, then Open Graph meta. Private accounts are refused.</li>
+      <li><b>2 · The Reader.</b> Both sources are cut into numbered snippets (<code>LI-4</code>, <code>IG-9</code>…). The Reader agent (Gemini Flash) writes the dossier — needs, hobbies, interests, values, personality, lifestyle, ambitions, what they look for, friction points, an ideal date, a personals ad — and <em>every line must cite a snippet with a verbatim quote and a confidence</em>. That is what the profile page shows, next to the full list of what was read. It is forbidden from using outside knowledge or inferring religion, health, orientation, politics, ethnicity or relationship status.</li>
+      <li><b>3 · The lobby.</b> Each agent sees only the other people’s short public cards, scores every one for fit (0–100 with a reason) and names the five it wants to ask out.</li>
+    </ol>
+  </div>
+  <div class="c6 vr">
+    <ol class="steps" start="4" style="counter-reset:s 3">
+      <li><b>4 · Scheduling.</b> Mutual asks are booked first, then one-sided asks, then the matchmaker tops up anyone with fewer than four dates (max six each).</li>
+      <li><b>5 · The date.</b> The inviting agent picks a venue from what both people love. Then the two agents trade eight turns. Each agent is a separate model call that sees <em>only its own person’s private dossier</em>, the other side’s public card, and the transcript — so it has to ask, listen and probe to learn anything. Every turn returns what it says out loud and a private thought (the “inner monologue” toggle). Agents speak as representatives (“Ankur would…”), never impersonating the person.</li>
+      <li><b>6 · Debriefs.</b> After the date each agent privately scores the other person for its own human on values, lifestyle, interests, communication, ambition and chemistry, gives an overall 0–100, says yes or no to a second date and writes a one-line verdict.</li>
+      <li><b>7 · Ranking.</b> For every person, all others are ranked. Dated pairs: geometric mean of both agents’ overall scores, +6 if both want a second date, −6 if neither does. Not dated: the average of both lobby reads, discounted 10% and labelled as an estimate. Each agent then writes a short report back to its person.</li>
+    </ol>
+  </div>
+</section>
+<section class="section cols" style="padding-top:0">
+  <div class="c12"><div class="section-head"><h2>Stack</h2></div></div>
+  <div class="c4"><div class="kicker">Scraping</div><p>Node 20 fetch + cheerio (LinkedIn public profile HTML and JSON-LD) · r.jina.ai reader fallback · Apify <code>instagram-profile-scraper</code> and a no-cookie LinkedIn actor via the run-sync API · Instagram web_profile_info / Open Graph fallbacks.</p></div>
+  <div class="c4"><div class="kicker">Agents</div><p>Google Gemini (free tier): Flash models for the Reader, lobby, debriefs and reports; Flash-Lite for the fast date turns. Calls are spread over a pool of models with per-model pacing, JSON-only outputs and retries (Anthropic Claude is a drop-in alternative). Each agent is stateless between turns — its memory is the dossier plus the transcript.</p></div>
+  <div class="c4"><div class="kicker">Site</div><p>Express locally, Vercel functions in production. The live run is one streaming request (newline-delimited JSON) so you watch scraping, reading, dates and ranking as they happen. The 25-person example is a static JSON snapshot of a full run. No database: your live result is kept in your browser.</p></div>
+</section>
+</div>
+<script>mount('/how');</script></body></html>

@@ -1,0 +1,7 @@
+node_modules
+.env
+.vercel
+video/*.mp4
+video/work
+data/raw
+data/*.log

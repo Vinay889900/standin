@@ -1,0 +1,108 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="/css/site.css"><script src="/js/app.js"></script><title>Send your agent — Standin</title></head><body>
+<div class="wrap">
+  <section class="section cols">
+    <div class="c5">
+      <div class="kicker">Send your agent</div>
+      <h2>Paste two links.</h2>
+      <form class="send" id="f">
+        <div><label for="li">LinkedIn profile</label><input id="li" name="linkedin" type="url" required placeholder="https://www.linkedin.com/in/…"></div>
+        <div><label for="ig">Instagram profile (public)</label><input id="ig" name="instagram" type="url" required placeholder="https://www.instagram.com/…"></div>
+        <div><button type="submit" id="go">Read me &amp; start dating →</button></div>
+        <p class="note">Only those two public pages are read. The agent then dates the four best-fitting agents from the column in parallel and ranks all of them. Takes about two minutes. Your result is kept in this browser only.</p>
+      </form>
+      <div id="past"></div>
+    </div>
+    <div class="c7 vr">
+      <div class="stages" id="stages"><span data-s="scrape">1 · Scrape</span><span data-s="read">2 · Read</span><span data-s="lobby">3 · Lobby</span><span data-s="dates">4 · Dates</span><span data-s="rank">5 · Rank</span></div>
+      <div class="log" id="log"><div>Waiting for two links.</div></div>
+    </div>
+  </section>
+  <div id="out"></div>
+</div>
+<script>
+mount('/run');
+const qs = new URLSearchParams(location.search);
+const f = document.getElementById('f'), logEl = document.getElementById('log'), out = document.getElementById('out');
+if (qs.get('linkedin')) f.linkedin.value = qs.get('linkedin');
+if (qs.get('instagram')) f.instagram.value = qs.get('instagram');
+const past = liveRuns();
+if (past.length) document.getElementById('past').innerHTML = '<div class="kicker" style="margin-top:24px">Your earlier runs in this browser</div><ul class="list-inline">' + past.map((r) => `<li><a href="/p/${encodeURIComponent(r.person.id)}">${esc(r.person.name)}</a> <span class="muted mono">${new Date(r.finishedAt).toLocaleString()}</span></li>`).join('') + '</ul>';
+
+const log = (m) => { logEl.insertAdjacentHTML('beforeend', `<div>${esc(m)}</div>`); logEl.scrollTop = logEl.scrollHeight; };
+const stage = (s) => {
+  let seen = false;
+  document.querySelectorAll('#stages span').forEach((el) => {
+    el.className = el.dataset.s === s ? 'on' : seen ? '' : 'done';
+    if (el.dataset.s === s) seen = true;
+  });
+};
+
+async function start(linkedin, instagram) {
+  const base = await db();
+  const btn = document.getElementById('go');
+  btn.disabled = true; btn.textContent = 'Your agent is out…';
+  logEl.innerHTML = ''; out.innerHTML = '';
+  const people = { ...base.byId };
+  let me, dateBoxes = {};
+  const dshell = { byId: people };
+  try {
+    const res = await fetch('/api/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ linkedin, instagram }) });
+    if (!res.ok || !res.body) throw new Error(`Server returned ${res.status}`);
+    const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = '';
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i;
+      while ((i = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, i); buf = buf.slice(i + 1);
+        if (!line.trim()) continue;
+        const e = JSON.parse(line);
+        if (e.type === 'log') log(e.msg);
+        else if (e.type === 'stage') stage(e.stage);
+        else if (e.type === 'sources') {
+          log(`LinkedIn: ${e.sources.li?.name} — “${e.sources.li?.headline || ''}”`);
+          log(`Instagram: @${e.sources.ig?.handle} — ${e.sources.ig?.posts?.length || 0} posts, bio “${(e.sources.ig?.bio || '').slice(0, 80)}”`);
+        } else if (e.type === 'dossier') {
+          me = e.person; people[me.id] = me;
+          log(`Reader finished: ${me.dossier.needs?.length} needs, ${me.dossier.hobbies?.length} hobbies, ${me.dossier.interests?.length} interests, ${me.snippets.length} snippets cited`);
+          out.innerHTML = `<div class="section-head"><h2>The profile</h2><span class="kicker">written by the Reader · streaming</span></div>` + profileHtml(me, { ...base, byId: people, rankings: {}, letters: {}, dates: [] }) + `<div class="section-head" id="dh"><h2>On dates right now</h2><span class="kicker" id="dk"></span></div><div class="live-dates" id="ld"></div>`;
+        } else if (e.type === 'lobby') {
+          log(`Lobby: ${me.dossier.first_name}'s agent asks out ${e.lobby.ask_out.map((x) => people[x]?.name).join(', ')}`);
+        } else if (e.type === 'venue') {
+          const o = people[e.b];
+          document.getElementById('ld').insertAdjacentHTML('beforeend', `<div class="live-date" id="d-${e.id}"><div class="kicker">${esc(me.dossier.first_name)}’s agent &amp; ${esc(o?.name)}’s agent</div><h3 style="font:400 26px/1.1 var(--display);margin:4px 0">${esc(e.venue.venue)}</h3><p class="note" style="margin:0 0 6px">${esc(e.venue.setting)}</p><div class="t"></div><div class="v"></div></div>`);
+          dateBoxes[e.id] = document.getElementById('d-' + e.id);
+          log(`Date booked with ${o?.name}: ${e.venue.venue}`);
+        } else if (e.type === 'turn') {
+          const box = dateBoxes[e.id]; if (!box) continue;
+          document.body.classList.add('show-thoughts');
+          box.querySelector('.t').insertAdjacentHTML('beforeend', lineHtml(e.turn, dshell));
+        } else if (e.type === 'debrief') {
+          const box = dateBoxes[e.id], dt = e.date;
+          const mine = dt.debriefs[me.id], theirs = dt.debriefs[dt.b];
+          if (box) box.querySelector('.v').innerHTML = `<p class="mono" style="margin-top:8px">${esc(me.dossier.first_name).toUpperCase()}'S AGENT: <b>${mine.overall}</b> ${mine.second_date ? '<span class="yes">YES</span>' : '<span class="no">NO</span>'} · ${esc(people[dt.b]?.dossier?.first_name || '').toUpperCase()}'S AGENT: <b>${theirs.overall}</b> ${theirs.second_date ? '<span class="yes">YES</span>' : '<span class="no">NO</span>'}</p><p><em>“${esc(mine.verdict)}”</em></p>`;
+          log(`Debrief from date with ${people[dt.b]?.name}: ${mine.overall}/100`);
+        } else if (e.type === 'error') {
+          log('Error: ' + e.message);
+          if (!e.id) out.insertAdjacentHTML('afterbegin', `<p class="err">${esc(e.message)}</p>`);
+        } else if (e.type === 'done') {
+          stage('none');
+          saveLiveRun(e.result);
+          log(`Done. ${me.dossier.first_name}'s ranking is ready.`);
+          const d2 = { ...base, byId: people, dates: [...base.dates, ...e.result.dates], rankings: { ...base.rankings, [me.id]: e.result.ranking }, letters: { ...base.letters, [me.id]: e.result.letter } };
+          out.insertAdjacentHTML('afterbegin', `<section class="section"><div class="section-head"><h2>${esc(me.dossier.first_name)}’s ranking</h2><a class="btn" href="/p/${encodeURIComponent(me.id)}">Open the saved profile →</a></div>${e.result.letter ? `<p class="ad-copy" style="font-size:19px;margin-bottom:18px"><span class="kicker" style="display:block">Report from the agent — ${esc(e.result.letter.headline || '')}</span>${esc(e.result.letter.letter || '')}</p>` : ''}${rankRows(e.result.ranking, d2, 10)}<p class="note">Top 10 of ${e.result.ranking.length}. Dated people are scored from both agents’ debriefs; the rest from the lobby read.</p></section>`);
+          window.scrollTo({ top: out.offsetTop - 20, behavior: 'smooth' });
+        }
+      }
+    }
+  } catch (err) {
+    log('Error: ' + err.message);
+    out.insertAdjacentHTML('afterbegin', `<p class="err">${esc(err.message)}</p>`);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Read me & start dating →';
+  }
+}
+f.onsubmit = (ev) => { ev.preventDefault(); start(f.linkedin.value, f.instagram.value); };
+if (qs.get('linkedin') && qs.get('instagram') && qs.has('go')) start(qs.get('linkedin'), qs.get('instagram'));
+</script></body></html>

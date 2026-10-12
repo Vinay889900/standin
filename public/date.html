@@ -1,0 +1,49 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="/css/site.css"><script src="/js/app.js"></script><title>A date — Standin</title></head><body>
+<div class="wrap" id="main"><p class="section">Loading…</p></div>
+<script>
+mount('/dates');
+const id = decodeURIComponent(location.pathname.split('/date/')[1] || new URLSearchParams(location.search).get('id') || '');
+const qs = new URLSearchParams(location.search);
+db().then((d) => {
+  const x = d.dates.find((y) => y.id === id);
+  const m = document.getElementById('main');
+  if (!x) { m.innerHTML = `<p class="section err">No date with id “${esc(id)}”. <a href="/dates">All dates</a></p>`; return; }
+  const A = d.byId[x.a], B = d.byId[x.b];
+  document.title = `${first(A)} & ${first(B)} — Standin`;
+  const deb = (P) => {
+    const r = x.debriefs[P.id] || {}, s = r.scores || {};
+    return `<div class="debrief"><div class="kicker">${esc(first(P))}’s agent reports back to ${esc(first(P))}</div>
+      <div class="big-score">${r.overall ?? '–'}<span class="mono muted" style="font-size:14px"> / 100</span></div>
+      <p class="mono ${r.second_date ? 'yes' : 'no'}">${r.second_date ? 'SECOND DATE: YES' : 'SECOND DATE: NO'}</p>
+      <p style="font-size:20px"><em>“${esc(r.verdict)}”</em></p>
+      <table class="scoretable">${Object.entries(s).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${v}/10</td></tr>`).join('')}</table>
+      <div class="kicker">Green flags</div><ul class="list-inline">${(r.green_flags || []).map((g) => `<li>${esc(g)}</li>`).join('')}</ul>
+      <div class="kicker" style="margin-top:10px">Red flags</div><ul class="list-inline">${(r.red_flags || []).map((g) => `<li>${esc(g)}</li>`).join('')}</ul>
+      ${r.best_moment ? `<p class="note">Best moment: ${esc(r.best_moment)}</p>` : ''}</div>`;
+  };
+  m.innerHTML = `<div class="date-head"><div class="kicker">A date between two agents · ${esc(x.why || '')}</div>
+    <div class="pair"><a href="/p/${x.a}"><img src="${photo(A)}" alt=""></a><span class="amp">&amp;</span><a href="/p/${x.b}"><img src="${photo(B)}" alt=""></a></div>
+    <h1>${esc(first(A))}’s agent &amp; ${esc(first(B))}’s agent</h1>
+    <p style="font-size:21px;font-style:italic;margin:6px auto;max-width:760px">${esc(x.venue.venue)} — ${esc(x.venue.setting)}</p>
+    <p class="note">Neither agent can see the other’s dossier. Each knows only its own person and what is said at the table.</p>
+    <p><span class="btn btn-line toggle" id="tt">Show inner monologue</span> &nbsp; <span class="btn btn-line toggle" id="replay">Replay the date</span></p></div>
+    <div class="script" id="script"></div>
+    <section class="section"><div class="section-head"><h2>The debriefs</h2><span class="kicker">written privately, after the date</span></div><div class="debriefs">${deb(A)}${deb(B)}</div></section>`;
+  const script = document.getElementById('script');
+  script.innerHTML = x.transcript.map((t) => lineHtml(t, d, x)).join('');
+  const tt = document.getElementById('tt');
+  tt.onclick = () => { document.body.classList.toggle('show-thoughts'); tt.textContent = document.body.classList.contains('show-thoughts') ? 'Hide inner monologue' : 'Show inner monologue'; };
+  let timer;
+  const replay = () => {
+    clearInterval(timer); script.innerHTML = ''; let i = 0;
+    timer = setInterval(() => {
+      if (i >= x.transcript.length) return clearInterval(timer);
+      script.insertAdjacentHTML('beforeend', lineHtml(x.transcript[i++], d, x));
+      script.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, +(qs.get('pace') || 2600));
+  };
+  document.getElementById('replay').onclick = replay;
+  if (qs.has('thoughts')) tt.click();
+  if (qs.has('replay')) replay();
+});
+</script></body></html>

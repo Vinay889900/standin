@@ -32,7 +32,7 @@
   {
     "url": "/dates",
     "label": "4 · The agents date",
-    "vo": "Across the run: NDATES dates, sorted by how well both sides scored them.",
+    "vo": "Across the run: fifty-seven dates, sorted by how well both sides scored them.",
     "steps": [["wait", 1], ["scroll", 1400, 4]]
   },
   {
